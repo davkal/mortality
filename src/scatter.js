@@ -11,14 +11,18 @@ const OUTER_HEIGHT = 500;
 
 // ES6 class
 class ScatterChart {
-  constructor(id, data, outerWidth, outerHeight) {
+  constructor(id, {
+    data, xScale, yScale, outerWidth, outerHeight
+  }) {
     this.id = id;
     this.data = data;
+    this.xScale = xScale;
+    this.yScale = yScale;
 
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
-
-    this.baseWidth = outerWidth;
-    this.baseHeight = outerHeight;
+    this.el = document.getElementById(id);
+    this.baseWidth = outerWidth || this.el.outerWidth || OUTER_WIDTH;
+    this.baseHeight = outerHeight || this.el.outerHeight || OUTER_HEIGHT;
     this.svg = d3.select(`#${this.id} svg`)
       .attr('width', this.baseWidth)
       .attr('height', this.baseHeight);
@@ -119,8 +123,8 @@ class ScatterChart {
 
   static setDots(sel, xScale, yScale) {
     sel.attr('r', 3.5)
-      .attr('cx', d => xScale(d.HR))
-      .attr('cy', d => yScale(d.logP));
+      .attr('cx', d => xScale(d.x))
+      .attr('cy', d => yScale(d.y));
   }
 
   setAxes(xScale, yScale) {
@@ -135,15 +139,13 @@ class ScatterChart {
   }
 
   getYScale() {
-    return d3.scaleLinear()
-      .domain([-1, Math.ceil(d3.max(this.data, d => d.logP))])
+    return this.yScale
       .range([this.getHeight(), 0])
       .nice();
   }
 
   getXScale() {
-    return d3.scaleLinear()
-      .domain([0, Math.ceil(d3.max(this.data, d => d.HR))])
+    return this.xScale
       .rangeRound([0, this.getWidth()])
       .nice();
   }
@@ -151,9 +153,6 @@ class ScatterChart {
 
 // Make bar chart factory function
 // defaut export, defaut params
-export default function (
-  id = 'viz', data = d3.range(10),
-  width = OUTER_WIDTH, height = OUTER_HEIGHT
-) {
-  return new ScatterChart(id, data, width, height);
+export default function (id = 'viz', data = d3.range(10)) {
+  return new ScatterChart(id, data);
 }

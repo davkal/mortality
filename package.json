@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint 'src/**/*.@(js|jsx)'",
     "build": "webpack",
-    "start": "webpack-dev-server --devtool eval --progress --hot --content-base public",
+    "start": "webpack-dev-server --devtool eval-source-map --progress --hot --content-base public",
     "deploy": "NODE_ENV=production webpack --config webpack.production.config.js"
   },
   "dependencies": {

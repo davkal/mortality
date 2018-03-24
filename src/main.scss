@@ -6,15 +6,23 @@ body {
     margin: 0;
 }
 
+.row {
+  display: flex;
+  margin: 1em;
+
+  > div {
+    margin: 1em;
+    flex: 1;
+  }
+}
+
 .bars {
   fill: $color-primary-2;
   opacity: 0.8;
 }
 
 .svg-container {
-    display: inline-block;
     position: relative;
-    width: 100%;
     // padding-bottom: 100%; /* aspect ratio */
     vertical-align: top;
     overflow: hidden;

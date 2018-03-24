@@ -9,21 +9,23 @@ const PADDING = {
 const OUTER_WIDTH = 960;
 const OUTER_HEIGHT = 500;
 
-function getRandomInt(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min)) + min;
-}
-
 // ES6 class
 class LineChart {
-  constructor(id, data, outerWidth, outerHeight) {
+  constructor(id, {
+    data, xScale, yScale, outerWidth, outerHeight
+  }) {
     this.id = id;
     this.data = data;
+    this.xScale = xScale;
+    this.yScale = yScale;
 
-    this.baseWidth = outerWidth;
-    this.baseHeight = outerHeight;
-    this.svg = d3.select(`#${this.id} svg`);
+    this.color = d3.scaleOrdinal(d3.schemeCategory10);
+    this.el = document.getElementById(id);
+    this.baseWidth = outerWidth || this.el.outerWidth || OUTER_WIDTH;
+    this.baseHeight = outerHeight || this.el.outerHeight || OUTER_HEIGHT;
+    this.svg = d3.select(`#${this.id} svg`)
+      .attr('width', this.baseWidth)
+      .attr('height', this.baseHeight);
 
     // If empty create element
     if (this.svg.empty()) {
@@ -38,9 +40,9 @@ class LineChart {
     const inner = this.svg.append('g')
       .attr('transform', `translate(${MARGIN.left}, ${MARGIN.top})`)
       .attr('class', 'inner');
-    // Make bars
+    // Make lines
     inner.append('g')
-      .attr('class', 'bars');
+      .attr('class', 'lines');
 
     // Make axis
     inner.append('g')
@@ -58,7 +60,7 @@ class LineChart {
 
     this.bindEvents();
     this.render();
-    this.generateData();
+    // this.generateData();
   }
 
   getWidth() {
@@ -80,7 +82,7 @@ class LineChart {
   bindEvents() {
     d3.select(window).on('resize', () => {
       this.resized();
-      this.render(false);
+      this.render();
     });
   }
 
@@ -100,51 +102,33 @@ class LineChart {
     this.svg.attr('height', outerHeight);
   }
 
-  render(doTransition = true) {
+  render() {
     const yScale = this.getYScale();
     const xScale = this.getXScale();
-    // Set bars
-    const bars = this.svg.select('g.inner g.bars')
-      .selectAll('rect')
+    // Set lines
+    const lines = this.svg.select('g.inner g.lines')
+      .selectAll('.line')
       .data(this.data);
-    this.setBars(bars.enter().append('rect'), xScale, yScale);
+    LineChart.setLines(lines.enter()
+      .append('path')
+      .attr('fill', 'none')
+      .attr('stroke', d => this.color(d.category))
+      .attr('stroke-width', 1.5)
+      .attr('class', 'line'), xScale, yScale);
 
-    // Set labels
-    const labels = this.svg.select('g.inner g.labels')
-      .selectAll('text')
-      .data(this.data);
-    LineChart.setLabels(labels.enter().append('text'), xScale, yScale);
+    LineChart.setLines(lines, xScale, yScale);
 
-    if (doTransition) {
-      this.setBars(bars.transition(), xScale, yScale);
-      LineChart.setLabels(labels.transition(), xScale, yScale);
-    } else {
-      this.setBars(bars, xScale, yScale);
-      LineChart.setLabels(labels, xScale, yScale);
-    }
-
-    bars.exit().remove();
-    labels.exit().remove();
+    lines.exit().remove();
 
     this.setAxes(xScale, yScale);
   }
 
-  setBars(sel, xScale, yScale) {
-    sel.attr('x', (d, i) => xScale(i))
-      .attr('y', d => yScale(d))
-      .attr('width', xScale.bandwidth())
-      .attr('height', d => Math.abs(this.getHeight() - yScale(d)))
-      .attr('fill', d => `rgb(0, ${Math.min(d * 10, 240)}, 0)`);
-  }
-
-  static setLabels(sel, xScale, yScale) {
-    sel.text(d => ((d >= 2) ? `${d}` : '')) // eslint-disable-line no-use-before-define
-      .attr('x', (d, i) => xScale(i) + (xScale.bandwidth() / 2))
-      .attr('y', d => yScale(d) + 20)
-      .attr('text-anchor', 'middle')
-      .attr('font-family', 'sans-serif')
-      .attr('font-size', '13px')
-      .attr('fill', 'white');
+  static setLines(sel, xScale, yScale) {
+    sel
+      .attr('d', d3.line()
+        .curve(d3.curveBasis)
+        .x(d => xScale(d.x))
+        .y(d => yScale(d.y)));
   }
 
   setAxes(xScale, yScale) {
@@ -159,34 +143,20 @@ class LineChart {
   }
 
   getYScale() {
-    return d3.scaleLinear()
-      .domain([0, d3.max(this.data)])
-      .range([this.getHeight(), 0]);
+    return this.yScale
+      .range([this.getHeight(), 0])
+      .nice();
   }
 
   getXScale() {
-    return d3.scaleBand()
-      .domain(d3.range(this.data.length))
+    return this.xScale
       .rangeRound([0, this.getWidth()])
-      .paddingInner(0.05);
-  }
-
-  generateData() {
-    d3.range(10).forEach(i => (
-      setTimeout(() => {
-        this.data.push(getRandomInt(0, 30));
-        this.data.shift();
-        this.render();
-      }, 1000 * i)
-    ));
+      .nice();
   }
 }
 
 // Make bar chart factory function
 // defaut export, defaut params
-export default function (
-  id = 'viz', data = d3.range(10),
-  width = OUTER_WIDTH, height = OUTER_HEIGHT
-) {
-  return new LineChart(id, data, width, height);
+export default function (id = 'viz', data = d3.range(10)) {
+  return new LineChart(id, data);
 }

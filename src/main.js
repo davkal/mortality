@@ -40,8 +40,10 @@ function prepareDataFig2a(data) {
   const yScale = d3.scaleLinear()
     .domain([0, Math.ceil(d3.max(processed, d => d.y))]);
   const yLines = [-Math.log10(9e-05)];
+  const legend = d3.set(processed, d => d.category).values();
 
   return {
+    legend,
     xTitle: 'Hazard ratio',
     yTitle: '-log10(p)',
     data: processed,

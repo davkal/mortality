@@ -12,13 +12,14 @@ const OUTER_HEIGHT = 500;
 // ES6 class
 class ScatterChart {
   constructor(id, {
-    data, xScale, yScale, yLines, outerWidth, outerHeight, yTitle, xTitle
+    data, legend, xScale, yScale, yLines, outerWidth, outerHeight, yTitle, xTitle
   }) {
     this.id = id;
     this.data = data;
     this.xScale = xScale;
     this.yScale = yScale;
     this.yLines = yLines;
+    this.legend = legend;
 
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
     this.el = document.getElementById(id);
@@ -50,7 +51,7 @@ class ScatterChart {
     inner.append('g')
       .attr('class', 'dots');
 
-    // Make axis
+    // Make labels
     inner.append('g')
       .attr('class', 'labels');
 
@@ -138,6 +139,22 @@ class ScatterChart {
     ScatterChart.setDots(dots, xScale, yScale);
     dots.exit().remove();
 
+    // Set labels
+    const labels = this.svg.select('g.inner g.labels')
+      .selectAll('.label')
+      .data(this.legend)
+      .enter()
+      .append('g')
+      .attr('class', 'label');
+    labels.append('text')
+      .text(d => d)
+      .attr('dx', '1em')
+      .attr('dy', '5px');
+    labels.append('circle')
+      .attr('fill', d => this.color(d))
+      .attr('r', 4);
+    ScatterChart.setLabels(labels);
+
     // Set lines
     const yLines = this.svg.select('g.inner g.lines')
       .selectAll('.line')
@@ -155,9 +172,14 @@ class ScatterChart {
   }
 
   static setDots(sel, xScale, yScale) {
-    sel.attr('r', 2.5)
+    sel.attr('r', 3)
       .attr('cx', d => xScale(d.x))
       .attr('cy', d => yScale(d.y));
+  }
+
+  static setLabels(sel) {
+    sel
+      .attr('transform', (d, i) => `translate(30,${i * 30})`);
   }
 
   setAxes(xScale, yScale) {

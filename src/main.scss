@@ -9,6 +9,7 @@ body {
 .row {
   display: flex;
   margin: 1em;
+  height: 100vh;
 
   > div {
     margin: 1em;
@@ -23,10 +24,8 @@ body {
 
 .svg-container {
     position: relative;
-    // padding-bottom: 100%; /* aspect ratio */
-    vertical-align: top;
-    overflow: hidden;
 }
+
 .svg-content-responsive {
     display: inline-block;
     position: absolute;
@@ -39,6 +38,14 @@ body {
   fill: none;
   stroke: #000;
   shape-rendering: crispEdges;
+}
+
+.dot {
+  stroke-opacity: 0;
+  &.hollow {
+    stroke-opacity: 1;
+    fill-opacity: 0;
+  }
 }
 
 #viz {

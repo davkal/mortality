@@ -32,14 +32,23 @@ function prepareDataFig2a(data) {
   const processed = data.map(d => ({
     ...d,
     x: d.HR,
-    y: -Math.log10(d.p)
+    y: -Math.log10(d.p),
+    confidence: d['min_p.value2'] === 'HR P<9e-05'
   }));
   const xScale = d3.scaleLinear()
     .domain([0, Math.ceil(d3.max(processed, d => d.x))]);
   const yScale = d3.scaleLinear()
-    .domain([-1, Math.ceil(d3.max(processed, d => d.y))]);
+    .domain([0, Math.ceil(d3.max(processed, d => d.y))]);
+  const yLines = [-Math.log10(9e-05)];
 
-  return { data: processed, xScale, yScale };
+  return {
+    xTitle: 'Hazard ratio',
+    yTitle: '-log10(p)',
+    data: processed,
+    xScale,
+    yScale,
+    yLines
+  };
 }
 
 const kernelEpanechnikov = k => (v) => {
@@ -47,8 +56,8 @@ const kernelEpanechnikov = k => (v) => {
   return Math.abs(s) <= 1 ? (0.75 * (1 - (s * s))) / k : 0;
 };
 
-const kernelDensityEstimator = (kernel, X) => V =>
-  X.map(x => ({ x, y: d3.mean(V, v => kernel(x - v)) }));
+const kernelDensityEstimator = (kernel, ticks) => V =>
+  ticks.map(t => ({ y: t, x: d3.mean(V, v => kernel(t - v)) }));
 
 function prepareDataFig2aDensity(data) {
   const processed = data.map(d => ({
@@ -56,25 +65,26 @@ function prepareDataFig2aDensity(data) {
     x: d.HR,
     y: -Math.log10(d.p)
   }));
-  const xScale = d3.scaleLinear()
-    .domain([0, Math.ceil(d3.max(processed, d => d.y))]);
   const grouped = processed.reduce((acc, d) => {
     const { category } = d;
     if (!acc[category]) acc[category] = [];
     acc[category].push(d.y);
     return acc;
   }, {});
+  const yScale = d3.scaleLinear()
+    .domain([0, Math.ceil(d3.max(processed, d => d.y))]);
   const categories = Object.keys(grouped);
   const series = Object.values(grouped)
-    .map(kernelDensityEstimator(kernelEpanechnikov(7), xScale.ticks(40)));
+    .map(kernelDensityEstimator(kernelEpanechnikov(5), yScale.ticks(40)));
   series.forEach((s, i) => {
     s.category = categories[i];
   });
-  const max = d3.max(series.map(s => d3.max(s, d => d.y)));
-  const yScale = d3.scaleLinear()
+  const max = d3.max(series.map(s => d3.max(s, d => d.x)));
+  const xScale = d3.scaleLinear()
     .domain([0, max]);
 
   return {
+    xTitle: 'Density',
     data: series,
     labels: categories,
     xScale,

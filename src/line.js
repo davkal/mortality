@@ -1,10 +1,10 @@
 import * as d3 from 'd3';
 
 const MARGIN = {
-  top: 20, right: 30, bottom: 20, left: 30
+  top: 40, right: 30, bottom: 60, left: 30
 };
 const PADDING = {
-  top: 60, right: 60, bottom: 60, left: 60
+  top: 30, right: 0, bottom: 30, left: 0
 };
 const OUTER_WIDTH = 960;
 const OUTER_HEIGHT = 500;
@@ -12,7 +12,7 @@ const OUTER_HEIGHT = 500;
 // ES6 class
 class LineChart {
   constructor(id, {
-    data, xScale, yScale, outerWidth, outerHeight
+    data, xScale, yScale, outerWidth, outerHeight, yTitle, xTitle
   }) {
     this.id = id;
     this.data = data;
@@ -21,8 +21,8 @@ class LineChart {
 
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
     this.el = document.getElementById(id);
-    this.baseWidth = outerWidth || this.el.outerWidth || OUTER_WIDTH;
-    this.baseHeight = outerHeight || this.el.outerHeight || OUTER_HEIGHT;
+    this.baseWidth = outerWidth || this.el.clientWidth || OUTER_WIDTH;
+    this.baseHeight = outerHeight || this.el.clientHeight || OUTER_HEIGHT;
     this.svg = d3.select(`#${this.id} svg`)
       .attr('width', this.baseWidth)
       .attr('height', this.baseHeight);
@@ -54,9 +54,23 @@ class LineChart {
     axes.append('g') // x axis
       .attr('class', 'axis')
       .attr('class', 'xaxis');
-    axes.append('g') // y axis
-      .attr('class', 'axis')
-      .attr('class', 'yaxis');
+    // axes.append('g') // y axis
+    //   .attr('class', 'axis')
+    //   .attr('class', 'yaxis');
+
+    axes.append('text')
+      .attr('transform', `translate(${(this.getWidth() / 2)},${this.getHeight() + PADDING.bottom})`)
+      .attr('dy', '1em')
+      .style('text-anchor', 'middle')
+      .text(xTitle);
+
+    axes.append('text')
+      .attr('transform', 'rotate(-90)')
+      .attr('y', 0 - PADDING.left)
+      .attr('x', 0 - (this.getHeight() / 2))
+      .attr('dy', '-1em')
+      .style('text-anchor', 'middle')
+      .text(yTitle);
 
     this.bindEvents();
     this.render();

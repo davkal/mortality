@@ -8,6 +8,8 @@ import makeScatterChart from './scatter';
 
 require('./main.scss');
 
+const dispatch = d3.dispatch('mousemove');
+
 // eslint-disable-next-line no-unused-vars
 function buildCircleChart(chartWidth, chartHeight) {
   // Dataset
@@ -39,7 +41,7 @@ function prepareDataFig2a(data) {
     .domain([0, Math.ceil(d3.max(processed, d => d.x))]);
   const yScale = d3.scaleLinear()
     .domain([0, Math.ceil(d3.max(processed, d => d.y))]);
-  const yLines = [-Math.log10(9e-05)];
+  const yLines = [{ y: -Math.log10(9e-05), id: '9e-05' }];
   const legend = d3.set(processed, d => d.category).values();
 
   return {
@@ -99,8 +101,8 @@ fetch('data/fig2a.csv')
   .then(text => d3.csvParse(text))
   .then((parsed) => {
     const scatterConfig = prepareDataFig2a(parsed);
-    makeScatterChart('fig2a-scatter', scatterConfig);
+    makeScatterChart('fig2a-scatter', scatterConfig, dispatch);
     const lineConfig = prepareDataFig2aDensity(parsed);
-    makeLineChart('fig2a-line', lineConfig);
+    makeLineChart('fig2a-line', lineConfig, dispatch);
   });
 // buildCircleChart(chartWidth, chartHeight);

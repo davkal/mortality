@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import fisheye from './fisheye';
 
 const MARGIN = {
   top: 40, right: 30, bottom: 60, left: 30
@@ -13,11 +14,12 @@ const OUTER_HEIGHT = 500;
 class LineChart {
   constructor(id, {
     data, xScale, yScale, outerWidth, outerHeight, yTitle, xTitle
-  }) {
+  }, dispatch) {
     this.id = id;
     this.data = data;
     this.xScale = xScale;
-    this.yScale = yScale;
+    this.yScale = fisheye.scale(yScale).distortion(0);
+    this.dispatch = dispatch;
 
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
     this.el = document.getElementById(id);
@@ -98,6 +100,14 @@ class LineChart {
       this.resized();
       this.render();
     });
+
+    if (this.dispatch) {
+      this.dispatch.on('mousemove.line', ({ mouse }) => {
+        const yScale = this.getYScale();
+        yScale.distortion(2.5).focus(mouse[1]);
+        this.render();
+      });
+    }
   }
 
   resized() {
@@ -157,20 +167,22 @@ class LineChart {
   }
 
   getYScale() {
-    return this.yScale
+    this.yScale
       .range([this.getHeight(), 0])
       .nice();
+    return this.yScale;
   }
 
   getXScale() {
-    return this.xScale
-      .rangeRound([0, this.getWidth()])
+    this.xScale
+      .range([0, this.getWidth()])
       .nice();
+    return this.xScale;
   }
 }
 
 // Make bar chart factory function
 // defaut export, defaut params
-export default function (id = 'viz', data = d3.range(10)) {
-  return new LineChart(id, data);
+export default function (id = 'viz', config, dispatch) {
+  return new LineChart(id, config, dispatch);
 }

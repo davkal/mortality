@@ -43,9 +43,17 @@ function prepareDataFig2a(data) {
     .domain([0, Math.ceil(d3.max(processed, d => d.y))]);
   const yLines = [{ y: -Math.log10(9e-05), id: '9e-05' }];
   const legend = d3.set(processed, d => d.category).values();
+  const symbols = [{
+    label: 'HR P < 9e-05',
+    classes: 'dot'
+  }, {
+    label: 'HR P < 9e-05',
+    classes: 'dot hollow'
+  }];
 
   return {
     legend,
+    symbols,
     xTitle: 'Hazard ratio',
     yTitle: '-log10(p)',
     data: processed,

@@ -13,14 +13,13 @@ const OUTER_HEIGHT = 500;
 // ES6 class
 class ScatterChart {
   constructor(id, {
-    data, legend, xScale, yScale, yLines, outerWidth, outerHeight, yTitle, xTitle
+    data, legend, xScale, yScale, yLines, outerWidth, outerHeight, yTitle, xTitle, symbols
   }, dispatch) {
     this.id = id;
     this.data = data;
     this.xScale = fisheye.scale(xScale).distortion(0);
     this.yScale = fisheye.scale(yScale).distortion(0);
     this.yLines = yLines;
-    this.legend = legend;
     this.dispatch = dispatch;
 
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -60,8 +59,42 @@ class ScatterChart {
       .attr('class', 'dots');
 
     // Make labels
-    this.inner.append('g')
-      .attr('class', 'labels');
+    const labels = this.inner.append('g')
+      .attr('class', 'labels')
+      .selectAll('.label')
+      .data(legend)
+      .enter()
+      .append('g')
+      .attr('class', 'label')
+      .attr('transform', (d, i) => `translate(30,${i * 25})`);
+    labels.append('text')
+      .text(d => d)
+      .attr('dx', '1em')
+      .attr('dy', '5px');
+    labels.append('circle')
+      .attr('fill', d => this.color(d))
+      .attr('r', 4);
+
+    // Make symbols
+    const offsetSymbols = (legend.length + 1) * 25;
+    const legendSymbols = this.inner.append('g')
+      .attr('class', 'symbols')
+      .selectAll('.symbol')
+      .data(symbols)
+      .enter()
+      .append('g')
+      .attr('class', 'symbol')
+      .attr('transform', (d, i) => `translate(30,${(i * 25) + offsetSymbols})`);
+    legendSymbols.append('text')
+      .text(d => d.label)
+      .attr('dx', '1em')
+      .attr('dy', '5px');
+    legendSymbols.append('circle')
+      .attr('class', d => d.classes)
+      .attr('stroke', '#aaa')
+      .attr('fill', '#aaa')
+      .attr('r', 4);
+
 
     // Make axis
     const axes = this.inner.append('g')
@@ -160,22 +193,6 @@ class ScatterChart {
     ScatterChart.setDots(dots, xScale, yScale);
     dots.exit().remove();
 
-    // Set labels
-    const labels = this.svg.select('g.inner g.labels')
-      .selectAll('.label')
-      .data(this.legend)
-      .enter()
-      .append('g')
-      .attr('class', 'label');
-    labels.append('text')
-      .text(d => d)
-      .attr('dx', '1em')
-      .attr('dy', '5px');
-    labels.append('circle')
-      .attr('fill', d => this.color(d))
-      .attr('r', 4);
-    ScatterChart.setLabels(labels);
-
     // Set lines
     const yLines = this.svg.select('g.inner g.lines')
       .selectAll('.line')
@@ -201,11 +218,6 @@ class ScatterChart {
     sel.attr('r', 3)
       .attr('cx', d => xScale(d.x))
       .attr('cy', d => yScale(d.y));
-  }
-
-  static setLabels(sel) {
-    sel
-      .attr('transform', (d, i) => `translate(30,${i * 30})`);
   }
 
   setAxes(xScale, yScale) {

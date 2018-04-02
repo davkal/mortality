@@ -2,7 +2,6 @@
 import * as d3 from 'd3';
 
 // Local imports
-import { createCircleChart } from './circle';
 import makeLineChart from './line';
 import makeScatterChart from './scatter';
 
@@ -10,27 +9,6 @@ require('./main.scss');
 
 const dispatch = d3.dispatch('mousemove');
 const color = d3.scaleOrdinal(d3.schemeCategory10);
-
-
-// eslint-disable-next-line no-unused-vars
-function buildCircleChart(chartWidth, chartHeight) {
-  // Dataset
-  const dataset = d3.range(20);
-
-  const svg = d3.select('#viz')
-    .append('svg')
-    .attr('preserveAspectRatio', 'xMinYMin meet')
-    .attr('viewBox', `0 0 ${chartWidth} ${chartHeight}`)
-    .classed('svg-content-responsive', true);
-
-  // Test module, string interpolation
-  return createCircleChart(svg, dataset);
-}
-
-// Load data
-
-// Main
-// d3.select('#viz').remove();
 
 function prepareDataFig2a(data) {
   const processed = data.map(d => ({
@@ -117,4 +95,3 @@ fetch('data/fig2a.csv')
     const lineConfig = prepareDataFig2aDensity(parsed);
     makeLineChart('fig2a-line', lineConfig, dispatch);
   });
-// buildCircleChart(chartWidth, chartHeight);

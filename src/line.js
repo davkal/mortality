@@ -7,13 +7,11 @@ const MARGIN = {
 const PADDING = {
   top: 30, right: 0, bottom: 30, left: 0
 };
-const OUTER_WIDTH = 960;
-const OUTER_HEIGHT = 500;
 
 // ES6 class
 class LineChart {
   constructor(id, {
-    color, data, xScale, yScale, outerWidth, outerHeight, yTitle, xTitle
+    color, data, xScale, yScale, yTitle, xTitle
   }, dispatch) {
     this.id = id;
     this.data = data;
@@ -23,25 +21,14 @@ class LineChart {
 
     this.color = color;
     this.el = document.getElementById(id);
-    this.baseWidth = outerWidth || this.el.clientWidth || OUTER_WIDTH;
-    this.baseHeight = outerHeight || this.el.clientHeight || OUTER_HEIGHT;
-    this.svg = d3.select(`#${this.id} svg`)
-      .attr('width', this.baseWidth)
-      .attr('height', this.baseHeight);
-
-    // If empty create element
-    if (this.svg.empty()) {
-      this.svg = d3.select('body')
-        .insert('div')
-        .attr('id', this.id)
-        .append('svg')
-        .attr('width', this.baseWidth)
-        .attr('height', this.baseHeight);
-    }
+    this.svg = d3.select(`#${this.id} svg`);
+    this.baseWidth = this.el.clientWidth;
+    this.baseHeight = this.el.clientHeight;
 
     const inner = this.svg.append('g')
       .attr('transform', `translate(${MARGIN.left}, ${MARGIN.top})`)
       .attr('class', 'inner');
+
     // Make lines
     inner.append('g')
       .attr('class', 'lines');
@@ -60,73 +47,65 @@ class LineChart {
     //   .attr('class', 'axis')
     //   .attr('class', 'yaxis');
 
-    axes.append('text')
-      .attr('transform', `translate(${(this.getWidth() / 2)},${this.getHeight() + PADDING.bottom})`)
+    this.xAxisLabel = axes.append('text')
       .attr('dy', '1em')
       .style('text-anchor', 'middle')
       .text(xTitle);
 
-    axes.append('text')
+    this.yAxisLabel = axes.append('text')
       .attr('transform', 'rotate(-90)')
       .attr('y', 0 - PADDING.left)
-      .attr('x', 0 - (this.getHeight() / 2))
       .attr('dy', '-1em')
       .style('text-anchor', 'middle')
       .text(yTitle);
 
     this.bindEvents();
-    this.render();
-    // this.generateData();
+    this.updateGraph();
+    this.update();
   }
 
   getWidth() {
-    const outerWidth = parseInt(this.svg.style('width'), 10);
-    const innerWidth = outerWidth - MARGIN.left - MARGIN.right;
+    const innerWidth = this.baseWidth - MARGIN.left - MARGIN.right;
     const width = innerWidth - PADDING.left - PADDING.right;
-
     return width;
   }
 
   getHeight() {
-    const outerHeight = parseInt(this.svg.style('height'), 10);
-    const innerHeight = outerHeight - MARGIN.top - MARGIN.bottom;
+    const innerHeight = this.baseHeight - MARGIN.top - MARGIN.bottom;
     const height = innerHeight - PADDING.top - PADDING.bottom;
-
     return height;
   }
 
   bindEvents() {
-    d3.select(window).on('resize', () => {
-      this.resized();
-      this.render();
-    });
+    d3.select(window).on(`resize.${this.id}`, () => this.onResize());
 
     if (this.dispatch) {
       this.dispatch.on('mousemove.line', ({ mouse }) => {
         const yScale = this.getYScale();
         yScale.distortion(2.5).focus(mouse[1]);
-        this.render();
+        this.update();
       });
     }
   }
 
-  resized() {
-    const width = window.innerWidth
-      || document.documentElement.clientWidth
-      || document.body.clientWidth;
-
-    const outerWidth = Math.min(this.baseWidth, width);
-    this.svg.attr('width', outerWidth);
-
-    const height = window.innerHeight
-      || document.documentElement.clientHeight
-      || document.body.clientHeight;
-
-    const outerHeight = Math.min(this.baseHeight, height);
-    this.svg.attr('height', outerHeight);
+  onResize() {
+    this.baseWidth = this.el.clientWidth;
+    this.baseHeight = this.el.clientHeight;
+    this.updateGraph();
+    this.update();
   }
 
-  render() {
+  updateGraph() {
+    this.svg
+      .attr('width', this.baseWidth)
+      .attr('height', this.baseHeight);
+    this.xAxisLabel
+      .attr('transform', `translate(${(this.getWidth() / 2)},${this.getHeight() + PADDING.bottom})`);
+    this.yAxisLabel
+      .attr('x', 0 - (this.getHeight() / 2));
+  }
+
+  update() {
     const yScale = this.getYScale();
     const xScale = this.getXScale();
     // Set lines

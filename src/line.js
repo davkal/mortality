@@ -13,7 +13,7 @@ const OUTER_HEIGHT = 500;
 // ES6 class
 class LineChart {
   constructor(id, {
-    data, xScale, yScale, outerWidth, outerHeight, yTitle, xTitle
+    color, data, xScale, yScale, outerWidth, outerHeight, yTitle, xTitle
   }, dispatch) {
     this.id = id;
     this.data = data;
@@ -21,7 +21,7 @@ class LineChart {
     this.yScale = fisheye.scale(yScale).distortion(0);
     this.dispatch = dispatch;
 
-    this.color = d3.scaleOrdinal(d3.schemeCategory10);
+    this.color = color;
     this.el = document.getElementById(id);
     this.baseWidth = outerWidth || this.el.clientWidth || OUTER_WIDTH;
     this.baseHeight = outerHeight || this.el.clientHeight || OUTER_HEIGHT;

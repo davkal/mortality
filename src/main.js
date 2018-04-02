@@ -9,6 +9,8 @@ import makeScatterChart from './scatter';
 require('./main.scss');
 
 const dispatch = d3.dispatch('mousemove');
+const color = d3.scaleOrdinal(d3.schemeCategory10);
+
 
 // eslint-disable-next-line no-unused-vars
 function buildCircleChart(chartWidth, chartHeight) {
@@ -52,6 +54,7 @@ function prepareDataFig2a(data) {
   }];
 
   return {
+    color,
     legend,
     symbols,
     xTitle: 'Hazard ratio',
@@ -96,6 +99,7 @@ function prepareDataFig2aDensity(data) {
     .domain([0, max]);
 
   return {
+    color,
     xTitle: 'Density',
     data: series,
     labels: categories,

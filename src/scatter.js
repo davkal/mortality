@@ -13,7 +13,7 @@ const OUTER_HEIGHT = 500;
 // ES6 class
 class ScatterChart {
   constructor(id, {
-    data, legend, xScale, yScale, yLines, outerWidth, outerHeight, yTitle, xTitle, symbols
+    color, data, legend, xScale, yScale, yLines, outerWidth, outerHeight, yTitle, xTitle, symbols
   }, dispatch) {
     this.id = id;
     this.data = data;
@@ -21,8 +21,8 @@ class ScatterChart {
     this.yScale = fisheye.scale(yScale).distortion(0);
     this.yLines = yLines;
     this.dispatch = dispatch;
+    this.color = color;
 
-    this.color = d3.scaleOrdinal(d3.schemeCategory10);
     this.el = document.getElementById(id);
     this.baseWidth = outerWidth || this.el.clientWidth || OUTER_WIDTH;
     this.baseHeight = outerHeight || this.el.clientHeight || OUTER_HEIGHT;
@@ -45,10 +45,11 @@ class ScatterChart {
       .attr('class', 'inner');
 
     // Background rect for mousemove
-    this.inner.append('rect')
+    this.background = this.inner.append('rect')
       .attr('class', 'background')
-      .attr('width', this.getWidth())
-      .attr('height', this.getHeight());
+      .attr('transform', `translate(${-PADDING.left}, ${-PADDING.top})`)
+      .attr('width', this.getWidth() + PADDING.left + PADDING.right)
+      .attr('height', this.getHeight() + PADDING.top + PADDING.bottom);
 
     // Make lines
     this.inner.append('g')
@@ -59,19 +60,21 @@ class ScatterChart {
       .attr('class', 'dots');
 
     // Make labels
-    const labels = this.inner.append('g')
+    this.labels = this.inner.append('g')
       .attr('class', 'labels')
       .selectAll('.label')
       .data(legend)
       .enter()
       .append('g')
       .attr('class', 'label')
-      .attr('transform', (d, i) => `translate(30,${i * 25})`);
-    labels.append('text')
+      .attr('transform', (d, i) => `translate(30,${i * 25})`)
+      .on('mouseenter', d => this.onEnterLabel(d))
+      .on('mouseleave', d => this.onLeaveLabel(d));
+    this.labels.append('text')
       .text(d => d)
       .attr('dx', '1em')
       .attr('dy', '5px');
-    labels.append('circle')
+    this.labels.append('circle')
       .attr('fill', d => this.color(d))
       .attr('r', 4);
 
@@ -120,9 +123,45 @@ class ScatterChart {
       .style('text-anchor', 'middle')
       .text(yTitle);
 
+    // Make tooltip
+    this.tooltip = d3.select('body')
+      .append('div')
+      .classed('tooltip', true)
+    this.tooltipHeader = this.tooltip.append('div')
+      .attr('class', 'tooltip-header');
+    this.tooltipBody = this.tooltip.append('div')
+      .attr('class', 'tooltip-body');
+
     this.bindEvents();
     this.render();
     // this.generateData();
+  }
+
+  onEnterLabel(label) {
+    this.selectedCategory = label;
+    this.render();
+  }
+
+  onLeaveLabel() {
+    this.selectedCategory = null;
+    this.render();
+  }
+
+  onMouseoverDot(d) {
+    const x = d3.event.pageX;
+    const y = d3.event.pageY;
+    this.tooltipHeader
+      .html(d.category)
+      .style('border-top-color', this.color(d.category));
+    this.tooltipBody.html(d.exposure.replace(/_/g, ' '));
+    this.tooltip
+      .style('transform', `translate(${(x + 10).toFixed(2)}px,${(y).toFixed(2)}px)`)
+      .style('opacity', 1);
+  }
+
+  onMouseoutDot() {
+    this.tooltip
+      .style('opacity', 0);
   }
 
   getWidth() {
@@ -148,7 +187,7 @@ class ScatterChart {
     });
 
     const self = this;
-    this.inner.on('mousemove', function () {
+    this.background.on('mousemove', function () {
       const xScale = self.getXScale();
       const yScale = self.getYScale();
       const mouse = d3.mouse(this);
@@ -184,13 +223,15 @@ class ScatterChart {
     const dots = this.svg.select('g.inner g.dots')
       .selectAll('.dot')
       .data(this.data);
-    ScatterChart.setDots(dots.enter()
+    this.setDots(dots.enter()
       .append('circle')
       .attr('fill', d => this.color(d.category))
       .attr('stroke', d => this.color(d.category))
-      .attr('class', d => (d.confidence ? 'dot' : 'dot hollow')), xScale, yScale);
+      .attr('class', d => (d.confidence ? 'dot' : 'dot hollow'))
+      .on('mouseover', d => this.onMouseoverDot(d))
+      .on('mouseout', d => this.onMouseoutDot(d)), xScale, yScale);
 
-    ScatterChart.setDots(dots, xScale, yScale);
+    this.setDots(dots, xScale, yScale);
     dots.exit().remove();
 
     // Set lines
@@ -214,8 +255,9 @@ class ScatterChart {
       .attr('y2', d => yScale(d.y));
   }
 
-  static setDots(sel, xScale, yScale) {
+  setDots(sel, xScale, yScale) {
     sel.attr('r', 3)
+      .classed('hide', d => (this.selectedCategory ? d.category !== this.selectedCategory : false))
       .attr('cx', d => xScale(d.x))
       .attr('cy', d => yScale(d.y));
   }

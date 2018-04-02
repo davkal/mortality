@@ -167,8 +167,8 @@ class ScatterChart {
       const yScale = self.getYScale();
       const mouse = d3.mouse(this);
 
-      xScale.distortion(2.5).focus(mouse[0]);
-      yScale.distortion(2.5).focus(mouse[1]);
+      xScale.distortion(2).focus(mouse[0]);
+      yScale.distortion(2).focus(mouse[1]);
       self.update();
 
       if (self.dispatch) self.dispatch.call('mousemove', self, { mouse });

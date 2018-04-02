@@ -134,15 +134,15 @@ class LineChart {
         .y(d => yScale(d.y)));
   }
 
-  setAxes(xScale, yScale) {
-    const yAxis = d3.axisLeft(yScale);
-    const xAxis = d3.axisBottom(xScale);
+  setAxes(xScale) {
+    // const yAxis = d3.axisLeft(yScale);
+    const xAxis = d3.axisBottom(xScale).ticks(5);
 
     this.svg.select('g.inner g.axes g.xaxis')
       .attr('transform', `translate(0, ${this.getHeight()})`)
       .call(xAxis);
-    this.svg.select('g.inner g.axes g.yaxis')
-      .call(yAxis);
+    // this.svg.select('g.inner g.axes g.yaxis')
+    //   .call(yAxis);
   }
 
   getYScale() {

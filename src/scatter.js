@@ -9,9 +9,9 @@ const PADDING = {
 };
 
 // ES6 class
-class ScatterChart {
+export default class ScatterChart {
   constructor(id, {
-    color, data, legend, xScale, yScale, yLines, yTitle, xTitle, symbols
+    color, data, xScale, yScale, yLines, yTitle, xTitle, symbols
   }, dispatch) {
     this.id = id;
     this.data = data;
@@ -20,6 +20,8 @@ class ScatterChart {
     this.yLines = yLines;
     this.dispatch = dispatch;
     this.color = color;
+    this.selectedCategories = [];
+    this.hoveredCategory = null;
 
     this.el = document.getElementById(id);
     this.svg = d3.select(`#${this.id} svg`);
@@ -43,27 +45,7 @@ class ScatterChart {
     this.inner.append('g')
       .attr('class', 'dots');
 
-    // Make labels
-    this.labels = this.inner.append('g')
-      .attr('class', 'labels')
-      .selectAll('.label')
-      .data(legend)
-      .enter()
-      .append('g')
-      .attr('class', 'label')
-      .attr('transform', (d, i) => `translate(30,${i * 25})`)
-      .on('mouseenter', d => this.onEnterLabel(d))
-      .on('mouseleave', d => this.onLeaveLabel(d));
-    this.labels.append('text')
-      .text(d => d)
-      .attr('dx', '1em')
-      .attr('dy', '5px');
-    this.labels.append('circle')
-      .attr('fill', d => this.color(d))
-      .attr('r', 4);
-
     // Make symbols
-    const offsetSymbols = (legend.length + 1) * 25;
     const legendSymbols = this.inner.append('g')
       .attr('class', 'symbols')
       .selectAll('.symbol')
@@ -71,7 +53,7 @@ class ScatterChart {
       .enter()
       .append('g')
       .attr('class', 'symbol')
-      .attr('transform', (d, i) => `translate(30,${(i * 25) + offsetSymbols})`);
+      .attr('transform', (d, i) => `translate(30,${(i * 25)})`);
     legendSymbols.append('text')
       .text(d => d.label)
       .attr('dx', '1em')
@@ -81,7 +63,6 @@ class ScatterChart {
       .attr('stroke', '#aaa')
       .attr('fill', '#aaa')
       .attr('r', 4);
-
 
     // Make axis
     const axes = this.inner.append('g')
@@ -161,18 +142,33 @@ class ScatterChart {
   bindEvents() {
     d3.select(window).on(`resize.${this.id}`, () => this.onResize());
 
-    const self = this;
-    this.background.on('mousemove', function () {
-      const xScale = self.getXScale();
-      const yScale = self.getYScale();
-      const mouse = d3.mouse(this);
+    if (this.dispatch) {
+      this.dispatch.on(`categories.${this.id}`, ({ hovered, selected }) => {
+        this.selectedCategories = selected;
+        this.hoveredCategory = hovered;
+        this.update();
+      });
+    }
 
-      xScale.distortion(2).focus(mouse[0]);
-      yScale.distortion(2).focus(mouse[1]);
-      self.update();
-
-      if (self.dispatch) self.dispatch.call('mousemove', self, { mouse });
+    this.background.on('mousemove', () => this.onMouseMove());
+    this.inner.on('mouseleave', () => {
+      this.getXScale().distortion(0);
+      this.getYScale().distortion(0);
+      this.update(true);
+      if (this.dispatch) this.dispatch.call('mousemove', this, { mouse: null });
     });
+  }
+
+  onMouseMove() {
+    const xScale = this.getXScale();
+    const yScale = this.getYScale();
+    const mouse = d3.mouse(this.background.node());
+
+    xScale.distortion(2).focus(mouse[0]);
+    yScale.distortion(2).focus(mouse[1]);
+    this.update();
+
+    if (this.dispatch) this.dispatch.call('mousemove', this, { mouse });
   }
 
   onResize() {
@@ -195,7 +191,7 @@ class ScatterChart {
       .attr('x', 0 - (this.getHeight() / 2));
   }
 
-  update() {
+  update(animate) {
     const yScale = this.getYScale();
     const xScale = this.getXScale();
     // Set dots
@@ -204,13 +200,14 @@ class ScatterChart {
       .data(this.data);
     this.setDots(dots.enter()
       .append('circle')
+      .attr('r', 3)
       .attr('fill', d => this.color(d.category))
       .attr('stroke', d => this.color(d.category))
       .attr('class', d => (d.confidence ? 'dot' : 'dot hollow'))
       .on('mouseover', d => this.onMouseoverDot(d))
       .on('mouseout', d => this.onMouseoutDot(d)), xScale, yScale);
 
-    this.setDots(dots, xScale, yScale);
+    this.setDots(dots, xScale, yScale, animate);
     dots.exit().remove();
 
     // Set lines
@@ -234,11 +231,19 @@ class ScatterChart {
       .attr('y2', d => yScale(d.y));
   }
 
-  setDots(sel, xScale, yScale) {
-    sel.attr('r', 3)
-      .classed('hide', d => (this.selectedCategory ? d.category !== this.selectedCategory : false))
+  setDots(sel, xScale, yScale, animate) {
+    sel.classed('hide', d => this.categoryHidden(d.category));
+    const selection = animate ? sel.transition() : sel;
+    selection
       .attr('cx', d => xScale(d.x))
       .attr('cy', d => yScale(d.y));
+  }
+
+  categoryHidden(category) {
+    if (!this.hoveredCategory && this.selectedCategories.length === 0) return false;
+    const selected = this.selectedCategories && this.selectedCategories.indexOf(category) > -1;
+    const hovered = this.hoveredCategory && this.hoveredCategory === category;
+    return !selected && !hovered;
   }
 
   setAxes(xScale, yScale) {
@@ -265,10 +270,4 @@ class ScatterChart {
       .nice();
     return this.xScale;
   }
-}
-
-// Make bar chart factory function
-// defaut export, defaut params
-export default function (id = 'viz', config, dispatch) {
-  return new ScatterChart(id, config, dispatch);
 }

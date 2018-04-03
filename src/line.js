@@ -9,7 +9,7 @@ const PADDING = {
 };
 
 // ES6 class
-class LineChart {
+export default class LineChart {
   constructor(id, {
     color, data, xScale, yScale, yTitle, xTitle
   }, dispatch) {
@@ -82,8 +82,13 @@ class LineChart {
     if (this.dispatch) {
       this.dispatch.on('mousemove.line', ({ mouse }) => {
         const yScale = this.getYScale();
-        yScale.distortion(2.5).focus(mouse[1]);
-        this.update();
+        if (mouse) {
+          yScale.distortion(2.5).focus(mouse[1]);
+          this.update();
+        } else {
+          yScale.distortion(0);
+          this.update(true);
+        }
       });
     }
   }
@@ -105,7 +110,7 @@ class LineChart {
       .attr('x', 0 - (this.getHeight() / 2));
   }
 
-  update() {
+  update(animate) {
     const yScale = this.getYScale();
     const xScale = this.getXScale();
     // Set lines
@@ -119,19 +124,21 @@ class LineChart {
       .attr('stroke-width', 1.5)
       .attr('class', 'line'), xScale, yScale);
 
-    LineChart.setLines(lines, xScale, yScale);
+    LineChart.setLines(lines, xScale, yScale, animate);
 
     lines.exit().remove();
 
     this.setAxes(xScale, yScale);
   }
 
-  static setLines(sel, xScale, yScale) {
-    sel
-      .attr('d', d3.line()
-        .curve(d3.curveBasis)
-        .x(d => xScale(d.x))
-        .y(d => yScale(d.y)));
+  static setLines(sel, xScale, yScale, animate) {
+    const line = d3.line()
+      .curve(d3.curveBasis)
+      .x(d => xScale(d.x))
+      .y(d => yScale(d.y));
+    const selection = animate ? sel.transition() : sel;
+    selection
+      .attr('d', line);
   }
 
   setAxes(xScale) {
@@ -158,10 +165,4 @@ class LineChart {
       .nice();
     return this.xScale;
   }
-}
-
-// Make bar chart factory function
-// defaut export, defaut params
-export default function (id = 'viz', config, dispatch) {
-  return new LineChart(id, config, dispatch);
 }

@@ -41,7 +41,7 @@ module.exports = {
     extensions: ['.js', '.jsx'],
   },
   plugins: [
-    new ExtractTextPlugin({ filename: 'main.css' }),
+    new ExtractTextPlugin({ filename: 'main.css', disable: true }),
     new webpack.HotModuleReplacementPlugin(),
     new OpenBrowserPlugin({ url: 'http://localhost:8080' }),
     new webpack.LoaderOptionsPlugin({

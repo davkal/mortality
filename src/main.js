@@ -2,13 +2,24 @@
 import * as d3 from 'd3';
 
 // Local imports
-import makeLineChart from './line';
-import makeScatterChart from './scatter';
+import LineChart from './line';
+import ScatterChart from './scatter';
+import CategoryFilter from './categories';
 
 require('./main.scss');
 
-const dispatch = d3.dispatch('mousemove');
+const dispatch = d3.dispatch('categories', 'mousemove');
 const color = d3.scaleOrdinal(d3.schemeCategory10);
+const components = {};
+
+function prepareDataFig2Filter(data) {
+  const categories = d3.set(data, d => d.category).values();
+  return {
+    color,
+    data,
+    categories
+  };
+}
 
 function prepareDataFig2a(data) {
   const processed = data.map(d => ({
@@ -90,8 +101,11 @@ fetch('data/fig2a.csv')
   .then(res => res.text())
   .then(text => d3.csvParse(text))
   .then((parsed) => {
+    const filterConfig = prepareDataFig2Filter(parsed);
+    components.filter2 = new CategoryFilter('fig2-categories', filterConfig, dispatch);
+
     const scatterConfig = prepareDataFig2a(parsed);
-    makeScatterChart('fig2a-scatter', scatterConfig, dispatch);
+    components.fig2a1 = new ScatterChart('fig2a-scatter', scatterConfig, dispatch);
     const lineConfig = prepareDataFig2aDensity(parsed);
-    makeLineChart('fig2a-line', lineConfig, dispatch);
+    components.fig2a2 = new LineChart('fig2a-line', lineConfig, dispatch);
   });

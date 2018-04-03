@@ -9,12 +9,37 @@ body {
 
 .row {
   display: flex;
-  margin: 1em;
-  height: 100vh;
+  margin: 1em 1em 0;
 
   > div {
-    margin: 1em;
+    margin: 0 1em;
     flex: 1;
+  }
+}
+
+.title {
+  font-size: 1rem;
+  color: #aaa;
+  margin: 0.25em 0.25rem;
+}
+
+#fig2-categories {
+  font-size: 0.75rem;
+  .filter {
+    display: inline-block;
+    margin: 0.5em;
+    padding: 0.25em 0.5em;
+    background-color: #eee;
+    border-radius: 0.2em;
+    cursor: pointer;
+  }
+  .filter-dot {
+    display: inline-block;
+    width: 0.6em;
+    height: 0.6em;
+    background-color: black;
+    border-radius: 100%;
+    margin: 0 0.5em 0.075em 0;
   }
 }
 
@@ -25,6 +50,7 @@ body {
 
 .svg-container {
     position: relative;
+    height: 80vh;
 }
 
 .svg-content-responsive {

@@ -18,8 +18,10 @@ export default class LineChart {
     this.xScale = xScale;
     this.yScale = fisheye.scale(yScale).distortion(0);
     this.dispatch = dispatch;
-
     this.color = color;
+    this.selectedCategories = [];
+    this.hoveredCategory = null;
+
     this.el = document.getElementById(id);
     this.svg = d3.select(`#${this.id} svg`);
     this.baseWidth = this.el.clientWidth;
@@ -90,6 +92,11 @@ export default class LineChart {
           this.update(true);
         }
       });
+      this.dispatch.on(`categories.${this.id}`, ({ hovered, selected }) => {
+        this.selectedCategories = selected;
+        this.hoveredCategory = hovered;
+        this.update();
+      });
     }
   }
 
@@ -117,21 +124,22 @@ export default class LineChart {
     const lines = this.svg.select('g.inner g.lines')
       .selectAll('.line')
       .data(this.data);
-    LineChart.setLines(lines.enter()
+    this.setLines(lines.enter()
       .append('path')
       .attr('fill', 'none')
       .attr('stroke', d => this.color(d.category))
       .attr('stroke-width', 1.5)
       .attr('class', 'line'), xScale, yScale);
 
-    LineChart.setLines(lines, xScale, yScale, animate);
+    this.setLines(lines, xScale, yScale, animate);
 
     lines.exit().remove();
 
     this.setAxes(xScale, yScale);
   }
 
-  static setLines(sel, xScale, yScale, animate) {
+  setLines(sel, xScale, yScale, animate) {
+    sel.classed('hide', d => this.categoryHidden(d.category));
     const line = d3.line()
       .curve(d3.curveBasis)
       .x(d => xScale(d.x))
@@ -139,6 +147,13 @@ export default class LineChart {
     const selection = animate ? sel.transition() : sel;
     selection
       .attr('d', line);
+  }
+
+  categoryHidden(category) {
+    if (!this.hoveredCategory && this.selectedCategories.length === 0) return false;
+    const selected = this.selectedCategories && this.selectedCategories.indexOf(category) > -1;
+    const hovered = this.hoveredCategory && this.hoveredCategory === category;
+    return !selected && !hovered;
   }
 
   setAxes(xScale) {

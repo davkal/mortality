@@ -12,7 +12,8 @@
   "dependencies": {
     "babel-runtime": "latest",
     "d3": "latest",
-    "lodash": "latest"
+    "lodash": "latest",
+    "science": "^1.9.3"
   },
   "devDependencies": {
     "babel-core": "latest",

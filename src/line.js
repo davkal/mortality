@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import fisheye from './fisheye';
 
 const MARGIN = {
-  top: 40, right: 30, bottom: 60, left: 30
+  top: 30, right: 30, bottom: 15, left: 30
 };
 const PADDING = {
   top: 30, right: 0, bottom: 30, left: 0
@@ -11,7 +11,7 @@ const PADDING = {
 // ES6 class
 export default class LineChart {
   constructor(id, {
-    color, data, xScale, yScale, yTitle, xTitle
+    color, data, moveEvent, xScale, yScale, yTitle, xTitle
   }, dispatch) {
     this.id = id;
     this.data = data;
@@ -21,6 +21,7 @@ export default class LineChart {
     this.color = color;
     this.selectedCategories = [];
     this.hoveredCategory = null;
+    this.moveEvent = moveEvent;
 
     this.el = document.getElementById(id);
     this.svg = d3.select(`#${this.id} svg`);
@@ -82,7 +83,7 @@ export default class LineChart {
     d3.select(window).on(`resize.${this.id}`, () => this.onResize());
 
     if (this.dispatch) {
-      this.dispatch.on('mousemove.line', ({ mouse }) => {
+      this.dispatch.on(`${this.moveEvent}.${this.id}`, ({ mouse }) => {
         const yScale = this.getYScale();
         if (mouse) {
           yScale.distortion(2.5).focus(mouse[1]);
@@ -142,8 +143,8 @@ export default class LineChart {
     sel.classed('hide', d => this.categoryHidden(d.category));
     const line = d3.line()
       .curve(d3.curveBasis)
-      .x(d => xScale(d.x))
-      .y(d => yScale(d.y));
+      .x(d => xScale(d[0]))
+      .y(d => yScale(d[1]));
     const selection = animate ? sel.transition() : sel;
     selection
       .attr('d', line);
@@ -158,7 +159,7 @@ export default class LineChart {
 
   setAxes(xScale) {
     // const yAxis = d3.axisLeft(yScale);
-    const xAxis = d3.axisBottom(xScale).ticks(5);
+    const xAxis = d3.axisBottom(xScale).ticks(3);
 
     this.svg.select('g.inner g.axes g.xaxis')
       .attr('transform', `translate(0, ${this.getHeight()})`)

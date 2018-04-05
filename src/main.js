@@ -1,5 +1,6 @@
 
 import * as d3 from 'd3';
+import * as science from 'science';
 
 // Local imports
 import LineChart from './line';
@@ -8,7 +9,7 @@ import CategoryFilter from './categories';
 
 require('./main.scss');
 
-const dispatch = d3.dispatch('categories', 'mousemove');
+const dispatch = d3.dispatch('categories', 'mousemoveFig2a', 'mousemoveFig2b');
 const color = d3.scaleOrdinal(d3.schemeCategory10);
 const components = {};
 
@@ -35,7 +36,7 @@ function prepareDataFig2a(data) {
   const yLines = [{ y: -Math.log10(9e-05), id: '9e-05' }];
   const legend = d3.set(processed, d => d.category).values();
   const symbols = [{
-    label: 'HR P < 9e-05',
+    label: 'HR P > 9e-05',
     classes: 'dot'
   }, {
     label: 'HR P < 9e-05',
@@ -49,11 +50,13 @@ function prepareDataFig2a(data) {
     xTitle: 'Hazard ratio',
     yTitle: '-log10(p)',
     data: processed,
+    moveEvent: 'mousemoveFig2a',
     xScale,
     yScale,
     yLines
   };
 }
+
 
 const kernelEpanechnikov = k => (v) => {
   const s = v / k;
@@ -61,7 +64,7 @@ const kernelEpanechnikov = k => (v) => {
 };
 
 const kernelDensityEstimator = (kernel, ticks) => V =>
-  ticks.map(t => ({ y: t, x: d3.mean(V, v => kernel(t - v)) }));
+  ticks.map(t => ([d3.mean(V, v => kernel(t - v)), t]));
 
 function prepareDataFig2aDensity(data) {
   const processed = data.map(d => ({
@@ -83,7 +86,7 @@ function prepareDataFig2aDensity(data) {
   series.forEach((s, i) => {
     s.category = categories[i];
   });
-  const max = d3.max(series.map(s => d3.max(s, d => d.x)));
+  const max = d3.max(series.map(s => d3.max(s, d => d[0])));
   const xScale = d3.scaleLinear()
     .domain([0, max]);
 
@@ -91,21 +94,96 @@ function prepareDataFig2aDensity(data) {
     color,
     xTitle: 'Density',
     data: series,
-    labels: categories,
+    moveEvent: 'mousemoveFig2a',
     xScale,
     yScale
   };
 }
 
-fetch('data/fig2a.csv')
-  .then(res => res.text())
-  .then(text => d3.csvParse(text))
-  .then((parsed) => {
-    const filterConfig = prepareDataFig2Filter(parsed);
-    components.filter2 = new CategoryFilter('fig2-categories', filterConfig, dispatch);
+function prepareDataFig2b(data) {
+  const processed = data.map(d => ({
+    ...d,
+    x: d.r2_age,
+    y: d.cindex,
+    confidence: d['min_p.value2'] === 'HR P<3.6e-06'
+  }));
+  const xScale = d3.scaleLog()
+    .domain(d3.extent(processed, d => d.x));
+  const yScale = d3.scaleLinear()
+    .domain(d3.extent(processed, d => d.y));
+  const symbols = [{
+    label: 'HR P > 3.6e-06',
+    classes: 'dot'
+  }, {
+    label: 'HR P < 3.6e-06',
+    classes: 'dot hollow'
+  }];
 
-    const scatterConfig = prepareDataFig2a(parsed);
-    components.fig2a1 = new ScatterChart('fig2a-scatter', scatterConfig, dispatch);
-    const lineConfig = prepareDataFig2aDensity(parsed);
-    components.fig2a2 = new LineChart('fig2a-line', lineConfig, dispatch);
+  return {
+    color,
+    symbols,
+    xTitle: 'Association with age and sex (R squared)',
+    yTitle: 'C-index including age and sex',
+    data: processed,
+    moveEvent: 'mousemoveFig2b',
+    xScale,
+    yScale
+  };
+}
+
+function prepareDataFig2bDensity(data) {
+  const processed = data.map(d => ({
+    ...d,
+    y: d.cindex
+  }));
+  const grouped = processed.reduce((acc, d) => {
+    const { category } = d;
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(d.y);
+    return acc;
+  }, {});
+  const yExtent = d3.extent(processed, d => d.y);
+  const yScale = d3.scaleLinear()
+    .domain(yExtent);
+  const ticks = d3.range(yExtent[0], yExtent[1], (yExtent[1] - yExtent[0]) / 100);
+  const categories = Object.keys(grouped);
+  const series = Object.values(grouped);
+  const densities = series.map((s) => {
+    const kernel = science.stats.kde().sample(s);
+    return kernel.bandwidth(science.stats.bandwidth.nrd0)(ticks);
+  });
+  densities.forEach((s, i) => {
+    s.category = categories[i];
+    s.forEach((p, i) => {
+      s[i] = [p[1], p[0]];
+    });
+  });
+  const xMax = d3.max(densities.map(s => d3.max(s, d => d[0])));
+  const xMin = d3.min(densities.map(s => d3.min(s, d => d[0])));
+  const xScale = d3.scaleLinear()
+    .domain([xMin, xMax]);
+
+  return {
+    color,
+    xTitle: 'Density',
+    data: densities,
+    moveEvent: 'mousemoveFig2b',
+    xScale,
+    yScale
+  };
+}
+
+
+const loadData = url => fetch(url)
+  .then(res => res.text())
+  .then(text => d3.csvParse(text));
+
+Promise.all(['data/fig2a.csv', 'data/fig2b.csv'].map(loadData))
+  .then((results) => {
+    const [fig2a, fig2b] = results;
+    components.filter2 = new CategoryFilter('fig2-categories', prepareDataFig2Filter(fig2a), dispatch);
+    components.fig2aS = new ScatterChart('fig2a-scatter', prepareDataFig2a(fig2a), dispatch);
+    components.fig2aL = new LineChart('fig2a-line', prepareDataFig2aDensity(fig2a), dispatch);
+    components.fig2bS = new ScatterChart('fig2b-scatter', prepareDataFig2b(fig2b), dispatch);
+    components.fig2bL = new LineChart('fig2b-line', prepareDataFig2bDensity(fig2b), dispatch);
   });

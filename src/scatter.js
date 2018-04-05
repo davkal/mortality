@@ -2,16 +2,16 @@ import * as d3 from 'd3';
 import fisheye from './fisheye';
 
 const MARGIN = {
-  top: 40, right: 0, bottom: 60, left: 60
+  top: 30, right: 0, bottom: 15, left: 70
 };
 const PADDING = {
-  top: 30, right: 0, bottom: 30, left: 30
+  top: 30, right: 0, bottom: 30, left: 40
 };
 
 // ES6 class
 export default class ScatterChart {
   constructor(id, {
-    color, data, xScale, yScale, yLines, yTitle, xTitle, symbols
+    color, data, xScale, yScale, yLines, yTitle, xTitle, symbols, moveEvent
   }, dispatch) {
     this.id = id;
     this.data = data;
@@ -22,6 +22,7 @@ export default class ScatterChart {
     this.color = color;
     this.selectedCategories = [];
     this.hoveredCategory = null;
+    this.moveEvent = moveEvent;
 
     this.el = document.getElementById(id);
     this.svg = d3.select(`#${this.id} svg`);
@@ -53,7 +54,7 @@ export default class ScatterChart {
       .enter()
       .append('g')
       .attr('class', 'symbol')
-      .attr('transform', (d, i) => `translate(30,${(i * 25)})`);
+      .attr('transform', (d, i) => `translate(20,${((i * 20) + 10)})`);
     legendSymbols.append('text')
       .text(d => d.label)
       .attr('dx', '1em')
@@ -155,7 +156,7 @@ export default class ScatterChart {
       this.getXScale().distortion(0);
       this.getYScale().distortion(0);
       this.update(true);
-      if (this.dispatch) this.dispatch.call('mousemove', this, { mouse: null });
+      if (this.dispatch) this.dispatch.call(this.moveEvent, this, { mouse: null });
     });
   }
 
@@ -168,7 +169,7 @@ export default class ScatterChart {
     yScale.distortion(2).focus(mouse[1]);
     this.update();
 
-    if (this.dispatch) this.dispatch.call('mousemove', this, { mouse });
+    if (this.dispatch) this.dispatch.call(this.moveEvent, this, { mouse });
   }
 
   onResize() {
@@ -211,15 +212,18 @@ export default class ScatterChart {
     dots.exit().remove();
 
     // Set lines
-    const yLines = this.svg.select('g.inner g.lines')
-      .selectAll('.line')
-      .data(this.yLines, d => d.id);
-    ScatterChart.setYLines(yLines.enter()
-      .append('line')
-      .attr('class', 'line')
-      .attr('stroke', '#ccc')
-      .attr('stroke-dasharray', '5, 5'), xScale, yScale);
-    ScatterChart.setYLines(yLines, xScale, yScale);
+    if (this.yLines) {
+      const yLines = this.svg.select('g.inner g.lines')
+        .selectAll('.line')
+        .data(this.yLines, d => d.id);
+      ScatterChart.setYLines(yLines.enter()
+        .append('line')
+        .attr('class', 'line')
+        .attr('stroke', '#ccc')
+        .attr('stroke-dasharray', '5, 5'), xScale, yScale);
+      ScatterChart.setYLines(yLines, xScale, yScale);
+    }
+
     this.setAxes(xScale, yScale);
   }
 

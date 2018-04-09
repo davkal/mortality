@@ -56,14 +56,14 @@ export default class ScatterChart {
       .data(symbols)
       .enter()
       .append('g')
-      .attr('class', 'symbol')
+      .attr('class', d => `${d.classes}  symbol`)
       .attr('transform', (d, i) => `translate(20,${((i * 20) + 10)})`);
     legendSymbols.append('text')
       .text(d => d.label)
       .attr('dx', '1em')
       .attr('dy', '5px');
     legendSymbols.append('circle')
-      .attr('class', d => d.classes)
+      .attr('class', 'point')
       .attr('stroke', '#aaa')
       .attr('fill', '#aaa')
       .attr('r', 4);

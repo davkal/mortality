@@ -6,10 +6,11 @@ import * as science from 'science';
 import LineChart from './line';
 import ScatterChart from './scatter';
 import CategoryFilter from './categories';
+import Variables from './variables';
 
 require('./main.scss');
 
-const dispatch = d3.dispatch('categories', 'mousemoveFig2a', 'mousemoveFig2b');
+const dispatch = d3.dispatch('categories', 'mousemoveFig2a', 'mousemoveFig2b', 'variable');
 const color = d3.scaleOrdinal(d3.schemeCategory10);
 const components = {};
 
@@ -19,6 +20,33 @@ function prepareDataFig2Filter(data) {
     color,
     data,
     categories
+  };
+}
+
+function prepareDataFig1e(csv) {
+  // Grouping variables
+  const grouped = csv.reduce((acc, d) => {
+    const key = d.variable;
+    if (!acc[key]) acc[key] = [];
+    d.category = d.Category;
+    acc[key].push(d);
+    acc[key].category = d.category;
+    return acc;
+  }, {});
+
+  // Calculating extent
+  Object.keys(grouped).forEach((key) => {
+    grouped[key].sum = d3.sum(grouped[key], d => d.count);
+    grouped[key].forEach((d) => {
+      d.valueCount = grouped[key].length;
+    });
+  });
+  const maxSum = d3.max(Object.values(grouped), d => d.sum);
+
+  return {
+    color,
+    data: grouped,
+    maxSum
   };
 }
 
@@ -178,9 +206,10 @@ const loadData = url => fetch(url)
   .then(res => res.text())
   .then(text => d3.csvParse(text));
 
-Promise.all(['data/fig2a.csv', 'data/fig2b.csv'].map(loadData))
+Promise.all(['data/fig1e.csv', 'data/fig2a.csv', 'data/fig2b.csv'].map(loadData))
   .then((results) => {
-    const [fig2a, fig2b] = results;
+    const [fig1e, fig2a, fig2b] = results;
+    components.fig1eB = new Variables('fig1e', prepareDataFig1e(fig1e), dispatch);
     components.filter2 = new CategoryFilter('fig2-categories', prepareDataFig2Filter(fig2a), dispatch);
     components.fig2aS = new ScatterChart('fig2a-scatter', prepareDataFig2a(fig2a), dispatch);
     components.fig2aL = new LineChart('fig2a-line', prepareDataFig2aDensity(fig2a), dispatch);

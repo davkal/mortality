@@ -1,132 +1,114 @@
 import * as d3 from 'd3';
 
 const MARGIN = {
-  top: 20, right: 30, bottom: 20, left: 30
+  top: 30, right: 20, bottom: 0, left: 0
 };
 const PADDING = {
-  top: 60, right: 60, bottom: 60, left: 60
+  top: 0, right: 20, bottom: 0, left: 0
 };
-const OUTER_WIDTH = 960;
-const OUTER_HEIGHT = 500;
-
-function getRandomInt(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min)) + min;
-}
 
 // ES6 class
-class BarChart {
-  constructor(id, data, outerWidth, outerHeight) {
+export default class BarChart {
+  constructor(id, { color, data }, dispatch) {
     this.id = id;
     this.data = data;
-
-    this.baseWidth = outerWidth;
-    this.baseHeight = outerHeight;
+    this.dispatch = dispatch;
+    this.color = color;
+    this.el = document.getElementById(id);
     this.svg = d3.select(`#${this.id} svg`);
-
-    // If empty create element
-    if (this.svg.empty()) {
-      this.svg = d3.select('body')
-        .insert('div')
-        .attr('id', this.id)
-        .append('svg')
-        .attr('width', this.baseWidth)
-        .attr('height', this.baseHeight);
-    }
+    this.baseWidth = this.el.clientWidth;
+    this.baseHeight = this.el.clientHeight;
 
     const inner = this.svg.append('g')
       .attr('transform', `translate(${MARGIN.left}, ${MARGIN.top})`)
       .attr('class', 'inner');
+
     // Make bars
-    inner.append('g')
-      .attr('class', 'bars');
+    // inner.append('g')
+    //   .attr('class', 'bars');
 
     // Make axis
     inner.append('g')
       .attr('class', 'labels');
 
     // Make axis
-    const axes = inner.append('g')
-      .attr('class', 'axes');
-    axes.append('g') // x axis
-      .attr('class', 'axis')
-      .attr('class', 'xaxis');
-    axes.append('g') // y axis
-      .attr('class', 'axis')
-      .attr('class', 'yaxis');
+    // const axes = inner.append('g')
+    //   .attr('class', 'axes');
+    // axes.append('g') // x axis
+    //   .attr('class', 'axis')
+    //   .attr('class', 'xaxis');
+    // axes.append('g') // y axis
+    //   .attr('class', 'axis')
+    //   .attr('class', 'yaxis');
 
     this.bindEvents();
-    this.render();
-    this.generateData();
+    this.updateGraph();
+    this.update();
   }
 
   getWidth() {
-    const outerWidth = parseInt(this.svg.style('width'), 10);
-    const innerWidth = outerWidth - MARGIN.left - MARGIN.right;
+    const innerWidth = this.baseWidth - MARGIN.left - MARGIN.right;
     const width = innerWidth - PADDING.left - PADDING.right;
-
     return width;
   }
 
   getHeight() {
-    const outerHeight = parseInt(this.svg.style('height'), 10);
-    const innerHeight = outerHeight - MARGIN.top - MARGIN.bottom;
+    const innerHeight = this.baseHeight - MARGIN.top - MARGIN.bottom;
     const height = innerHeight - PADDING.top - PADDING.bottom;
-
     return height;
   }
 
   bindEvents() {
-    d3.select(window).on('resize', () => {
-      this.resized();
-      this.render(false);
-    });
+    d3.select(window).on(`resize.${this.id}`, () => this.onResize());
   }
 
-  resized() {
-    const width = window.innerWidth
-      || document.documentElement.clientWidth
-      || document.body.clientWidth;
-
-    const outerWidth = Math.min(this.baseWidth, width);
-    this.svg.attr('width', outerWidth);
-
-    const height = window.innerHeight
-      || document.documentElement.clientHeight
-      || document.body.clientHeight;
-
-    const outerHeight = Math.min(this.baseHeight, height);
-    this.svg.attr('height', outerHeight);
+  onResize() {
+    this.baseWidth = this.el.clientWidth;
+    this.baseHeight = this.el.clientHeight;
+    this.updateGraph();
+    this.update();
   }
 
-  render(doTransition = true) {
-    const yScale = this.getYScale();
-    const xScale = this.getXScale();
+  updateGraph() {
+    this.svg
+      .attr('width', this.baseWidth)
+      .attr('height', this.baseHeight);
+  }
+
+  update() {
+    // const yScale = this.getYScale();
+    // const xScale = this.getXScale();
     // Set bars
-    const bars = this.svg.select('g.inner g.bars')
-      .selectAll('rect')
-      .data(this.data);
-    this.setBars(bars.enter().append('rect'), xScale, yScale);
+    // const bars = this.svg.select('g.inner g.bars')
+    //   .selectAll('rect')
+    //   .data(this.data);
+    // this.setBars(bars.enter().append('rect'), xScale, yScale);
 
     // Set labels
     const labels = this.svg.select('g.inner g.labels')
-      .selectAll('text')
-      .data(this.data);
-    BarChart.setLabels(labels.enter().append('text'), xScale, yScale);
+      .selectAll('.label')
+      .data(d3.keys(this.data));
+    labels.enter()
+      .append('g')
+      .attr('class', 'label')
+      .attr('transform', (d, i) => `translate(0, ${i * 20})`)
+      .each(function (d) {
+        const label = d3.select(this);
+        label.append('text').text(d);
+      });
 
-    if (doTransition) {
-      this.setBars(bars.transition(), xScale, yScale);
-      BarChart.setLabels(labels.transition(), xScale, yScale);
-    } else {
-      this.setBars(bars, xScale, yScale);
-      BarChart.setLabels(labels, xScale, yScale);
-    }
+    // if (doTransition) {
+    //   this.setBars(bars.transition(), xScale, yScale);
+    //   BarChart.setLabels(labels.transition(), xScale, yScale);
+    // } else {
+    //   this.setBars(bars, xScale, yScale);
+    //   BarChart.setLabels(labels, xScale, yScale);
+    // }
 
-    bars.exit().remove();
+    // bars.exit().remove();
     labels.exit().remove();
 
-    this.setAxes(xScale, yScale);
+    // this.setAxes(xScale, yScale);
   }
 
   setBars(sel, xScale, yScale) {
@@ -170,23 +152,4 @@ class BarChart {
       .rangeRound([0, this.getWidth()])
       .paddingInner(0.05);
   }
-
-  generateData() {
-    d3.range(10).forEach(i => (
-      setTimeout(() => {
-        this.data.push(getRandomInt(0, 30));
-        this.data.shift();
-        this.render();
-      }, 1000 * i)
-    ));
-  }
-}
-
-// Make bar chart factory function
-// defaut export, defaut params
-export default function (
-  id = 'viz', data = d3.range(10),
-  width = OUTER_WIDTH, height = OUTER_HEIGHT
-) {
-  return new BarChart(id, data, width, height);
 }

@@ -11,11 +11,43 @@ body {
   display: flex;
 }
 
+.column {
+  flex: 1;
+}
+
 .title {
   font-size: 2rem;
   font-weight: 100;
   color: #aaa;
   margin: 0.25em 0.25rem;
+}
+
+#fig1e {
+  font-size: 0.7rem;
+  position: relative;
+  left: -20px;
+  overflow-y: scroll;
+  height: 95vh;
+
+  .filter {
+    color: #666;
+    position: relative;
+    margin-bottom: 0.25em;
+  }
+
+  .filter-bars {
+    position: relative;
+    top: -1px;
+    line-height: 0;
+  }
+
+  .filter-bar {
+    height: 2px;
+    background-color: transparent;
+    width: 4px;
+    display: inline-block;
+    border-right: 1px solid white;
+  }
 }
 
 #fig2-categories {
@@ -73,12 +105,27 @@ body {
   pointer-events: none;
 }
 
+.no-display {
+  display: none;
+}
+
 .dot {
-  stroke-opacity: 0;
-  transition: opacity .3s;
-  &.hollow {
+  .outer {
+    stroke-opacity: 0;
+    transition: opacity .3s;
+    stroke-dasharray: 4px;
+  }
+  .point {
+    stroke-opacity: 0;
+    transition: opacity .3s;
+  }
+  &.hollow .point {
     stroke-opacity: 1;
     fill-opacity: 0;
+  }
+  &.highlighted .outer {
+    stroke-opacity: 1;
+    animation: spin 4s infinite;
   }
 }
 
@@ -128,5 +175,14 @@ svg .background {
   &-body {
     padding-top: 0.5em;
     font-size: 0.8rem;
+  }
+}
+
+@keyframes spin {
+  from {
+      transform:rotate(0deg);
+  }
+  to {
+      transform:rotate(360deg);
   }
 }

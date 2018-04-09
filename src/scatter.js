@@ -23,6 +23,9 @@ export default class ScatterChart {
     this.selectedCategories = [];
     this.hoveredCategory = null;
     this.moveEvent = moveEvent;
+    this.highlightedLabel = null;
+
+    this.makeDot = this.makeDot.bind(this);
 
     this.el = document.getElementById(id);
     this.svg = d3.select(`#${this.id} svg`);
@@ -149,6 +152,10 @@ export default class ScatterChart {
         this.hoveredCategory = hovered;
         this.update();
       });
+      this.dispatch.on(`variable.${this.id}`, ({ hovered }) => {
+        this.highlightedDot = hovered;
+        this.update();
+      });
     }
 
     this.background.on('mousemove', () => this.onMouseMove());
@@ -199,14 +206,7 @@ export default class ScatterChart {
     const dots = this.svg.select('g.inner g.dots')
       .selectAll('.dot')
       .data(this.data);
-    this.setDots(dots.enter()
-      .append('circle')
-      .attr('r', 3)
-      .attr('fill', d => this.color(d.category))
-      .attr('stroke', d => this.color(d.category))
-      .attr('class', d => (d.confidence ? 'dot' : 'dot hollow'))
-      .on('mouseover', d => this.onMouseoverDot(d))
-      .on('mouseout', d => this.onMouseoutDot(d)), xScale, yScale);
+    this.setDots(dots.enter().append('g').call(s => this.makeDot(s)), xScale, yScale);
 
     this.setDots(dots, xScale, yScale, animate);
     dots.exit().remove();
@@ -227,6 +227,24 @@ export default class ScatterChart {
     this.setAxes(xScale, yScale);
   }
 
+  makeDot(sel) {
+    sel
+      .attr('class', 'dot')
+      .classed('hollow', d => !d.confidence)
+      .on('mouseover', d => this.onMouseoverDot(d))
+      .on('mouseout', d => this.onMouseoutDot(d));
+    sel.append('circle')
+      .attr('class', 'outer')
+      .attr('r', 10)
+      .attr('fill', 'none')
+      .attr('stroke', d => this.color(d.category));
+    sel.append('circle')
+      .attr('class', 'point')
+      .attr('r', 3)
+      .attr('fill', d => this.color(d.category))
+      .attr('stroke', d => this.color(d.category));
+  }
+
   static setYLines(sel, xScale, yScale) {
     sel
       .attr('x1', xScale(xScale.domain()[0]))
@@ -236,11 +254,18 @@ export default class ScatterChart {
   }
 
   setDots(sel, xScale, yScale, animate) {
-    sel.classed('hide', d => this.categoryHidden(d.category));
+    sel
+      .classed('hide', d => this.categoryHidden(d.category))
+      .classed('highlighted', d => this.dotHighlighted(d));
     const selection = animate ? sel.transition() : sel;
     selection
-      .attr('cx', d => xScale(d.x))
-      .attr('cy', d => yScale(d.y));
+      .attr('transform', d => `translate(${xScale(d.x)},${yScale(d.y)})`);
+    selection.select('.point')
+      .attr('r', d => (this.dotHighlighted(d) ? 6 : 3));
+  }
+
+  dotHighlighted(d) {
+    return this.highlightedDot === d.exposure;
   }
 
   categoryHidden(category) {

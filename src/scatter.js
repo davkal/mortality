@@ -253,14 +253,12 @@ export default class ScatterChart {
       .attr('y2', d => yScale(d.y));
   }
 
-  setDots(sel, xScale, yScale, animate) {
+  setDots(sel, xScale, yScale) {
     sel
       .classed('hide', d => this.categoryHidden(d.category))
-      .classed('highlighted', d => this.dotHighlighted(d));
-    const selection = animate ? sel.transition() : sel;
-    selection
+      .classed('highlighted', d => this.dotHighlighted(d))
       .attr('transform', d => `translate(${xScale(d.x)},${yScale(d.y)})`);
-    selection.select('.point')
+    sel.select('.point')
       .attr('r', d => (this.dotHighlighted(d) ? 6 : 3));
   }
 

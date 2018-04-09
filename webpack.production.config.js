@@ -10,32 +10,29 @@ module.exports = {
     path.resolve(__dirname, 'src/main.js'),
   ],
   output: {
-    path: __dirname + '/build',
+    path: __dirname + '/docs',
     publicPath: '/',
     filename: './bundle.js'
   },
   module: {
-    loaders:[
-        { test: /\.jsx?$/,
-          include: path.resolve(__dirname, 'src'),
-          exclude: /node_modules/,
-          loader: 'babel-loader',
-          query: {
-            presets: ['es2015', 'stage-0', 'react']
-          }
-        },
-        { test: /\.css$/, include: path.resolve(__dirname, 'src'), loader: 'style-loader!css-loader' },
-        { test: /\.scss$/, loader: ExtractTextPlugin.extract('style', 'css?sourceMap!sass?sourceMap')},
+    loaders: [
+      {
+        test: /\.jsx?$/,
+        include: path.resolve(__dirname, 'src'),
+        exclude: /node_modules/,
+        loader: 'babel-loader',
+        query: {
+          presets: ['es2015', 'stage-0', 'react']
+        }
+      },
+      { test: /\.css$/, include: path.resolve(__dirname, 'src'), loader: 'style-loader!css-loader' },
+      { test: /\.scss$/, include: path.resolve(__dirname, 'src'), loader: ExtractTextPlugin.extract({ fallback: 'style-loader', use: ['css-loader', 'sass-loader'] }) },
     ]
   },
   resolve: {
-    extensions: ['', '.js', '.jsx'],
-  },
-  sassLoader: {
-    includePaths: [ 'src/style' ]
+    extensions: ['.scss', '.js', '.jsx'],
   },
   plugins: [
-    new webpack.optimize.DedupePlugin(),
     new uglifyJsPlugin({
       compress: {
         warnings: false
@@ -48,8 +45,8 @@ module.exports = {
     }),
     new ExtractTextPlugin('main.css'),
     new CopyWebpackPlugin([
-      { from: './src/index.html', to: 'index.html' },
-      { from: './src/main.scss', to: 'main.css' }
+      { from: './public/index.html', to: 'index.html' },
+      { from: './public/data', to: 'data' }
     ]),
   ]
 };

@@ -24,8 +24,21 @@ body {
   height: 95vh; }
   #fig1e .filter {
     color: #666;
-    position: relative;
-    margin-bottom: 0.25em; }
+    margin-bottom: 0.25em;
+    cursor: pointer;
+    display: flex; }
+    #fig1e .filter.selected .filter-dot {
+      visibility: visible; }
+    #fig1e .filter.no-display {
+      display: none; }
+  #fig1e .filter-dot {
+    visibility: hidden;
+    display: block;
+    width: 0.5em;
+    height: 0.5em;
+    background-color: black;
+    border-radius: 100%;
+    margin: 0.4em 0.5em 0 0; }
   #fig1e .filter-bars {
     position: relative;
     top: -1px;

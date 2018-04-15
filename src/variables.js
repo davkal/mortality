@@ -10,6 +10,8 @@ export default class Variables {
     this.dispatch = dispatch;
     this.selectedCategories = [];
     this.hoveredCategory = null;
+    this.hovered = null;
+    this.selected = [];
 
     this.color = color;
     this.el = d3.select(`#${this.id}`);
@@ -26,10 +28,22 @@ export default class Variables {
 
     this.filters
       .append('span')
+      .attr('class', 'filter-dot')
+      .style('background-color', d => this.color(this.data[d].category));
+
+    const wrappers = this.filters
+      .append('div')
+      .attr('class', 'filter-wrapper');
+
+    wrappers
+      .append('span')
       .attr('class', 'filter-label')
       .text(d => d.replace(/_/g, ' '));
 
-    this.filters
+
+    // Min width of 5%
+    const barWidth = count => Math.max(5, Math.floor((count / maxSum) * 95));
+    wrappers
       .append('div')
       .attr('class', 'filter-bars')
       .selectAll('.filter-bar')
@@ -38,7 +52,7 @@ export default class Variables {
       .append('span')
       .attr('class', 'filter-bar')
       .style('background-color', d => this.color(d.category))
-      .style('width', d => `${Math.floor((d.count / maxSum) * 99)}%`)
+      .style('width', d => `${barWidth(d.count)}%`)
       .style('opacity', (d, i) => `${(i + 1) / d.valueCount}`);
 
     this.bindEvents();
@@ -66,8 +80,9 @@ export default class Variables {
   }
 
   publish() {
-    this.dispatch.call('variable', this, {
-      hovered: this.hovered
+    this.dispatch.call('variables', this, {
+      hovered: this.hovered,
+      selected: this.selected
     });
   }
 
@@ -88,8 +103,13 @@ export default class Variables {
     return !selected && !hovered;
   }
 
+  variableSelected(d) {
+    return this.selected && this.selected.indexOf(d) > -1;
+  }
+
   update() {
     this.filters
-      .classed('no-display', d => this.categoryHidden(this.data[d].category));
+      .classed('no-display', d => this.categoryHidden(this.data[d].category))
+      .classed('selected', d => this.variableSelected(d));
   }
 }

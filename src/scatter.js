@@ -22,6 +22,7 @@ export default class ScatterChart {
     this.color = color;
     this.selectedCategories = [];
     this.hoveredCategory = null;
+    this.selectedDots = [];
     this.moveEvent = moveEvent;
     this.highlightedLabel = null;
 
@@ -152,8 +153,9 @@ export default class ScatterChart {
         this.hoveredCategory = hovered;
         this.update();
       });
-      this.dispatch.on(`variable.${this.id}`, ({ hovered }) => {
+      this.dispatch.on(`variables.${this.id}`, ({ hovered, selected }) => {
         this.highlightedDot = hovered;
+        this.selectedDots = selected;
         this.update();
       });
     }
@@ -263,7 +265,7 @@ export default class ScatterChart {
   }
 
   dotHighlighted(d) {
-    return this.highlightedDot === d.exposure;
+    return this.highlightedDot === d.exposure || this.selectedDots.indexOf(d.exposure) > -1;
   }
 
   categoryHidden(category) {

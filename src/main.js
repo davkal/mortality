@@ -8,9 +8,9 @@ import ScatterChart from './scatter';
 import CategoryFilter from './categories';
 import Variables from './variables';
 
-require('./main.scss');
+import './main.scss';
 
-const dispatch = d3.dispatch('categories', 'mousemoveFig2a', 'mousemoveFig2b', 'variable');
+const dispatch = d3.dispatch('categories', 'mousemoveFig2a', 'mousemoveFig2b', 'variables');
 const color = d3.scaleOrdinal(d3.schemeCategory10);
 const components = {};
 

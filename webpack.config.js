@@ -1,9 +1,13 @@
-var webpack = require('webpack');
-var path = require('path');
-var OpenBrowserPlugin = require('open-browser-webpack-plugin');
-var ExtractTextPlugin = require("extract-text-webpack-plugin");
+const webpack = require('webpack');
+const path = require('path');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
+
+const extractSass = new ExtractTextPlugin({
+  filename: 'main.css'
+});
 
 module.exports = {
+  mode: 'development',
   devServer: {
     historyApiFallback: true,
     hot: true,
@@ -18,42 +22,49 @@ module.exports = {
     path.resolve(__dirname, 'src/main.js')
   ],
   output: {
-    path: __dirname + '/build',
-    publicPath: '/',
-    filename: './bundle.js'
+    filename: 'main.js',
+    path: path.resolve(__dirname, 'build')
   },
   module: {
-    loaders: [
+    rules: [
       {
         test: /\.jsx?$/,
         include: path.resolve(__dirname, 'src'),
         exclude: /node_modules/,
-        loader: 'babel-loader',
-        query: {
-          presets: ['es2015', 'stage-0', 'react']
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['es2015', 'stage-0', 'react']
+          }
         }
       },
-      { test: /\.css$/, include: path.resolve(__dirname, 'src'), loader: 'style-loader!css-loader' },
-      { test: /\.scss$/, loader: ExtractTextPlugin.extract({ fallback: 'style-loader', use: 'css-loader?sourceMap!sass-loader?sourceMap' }) },
+      // { test: /\.css$/, include: path.resolve(__dirname, 'src'), use: 'style-loader!css-loader' },
+      {
+        test: /\.scss$/,
+        include: path.resolve(__dirname, 'src'),
+        use: extractSass.extract({
+          use: [{
+            loader: 'css-loader', // translates CSS into CommonJS
+            options: {
+              sourceMap: true
+            }
+          }, {
+            loader: 'sass-loader', // compiles Sass to CSS
+            options: {
+              sourceMap: true
+            }
+          }],
+          fallback: 'style-loader'
+        })
+      }
     ]
   },
   resolve: {
-    extensions: ['.js', '.jsx'],
+    extensions: ['.scss', '.js', '.jsx']
   },
   plugins: [
-    new ExtractTextPlugin({ filename: 'main.css', disable: true }),
-    new webpack.HotModuleReplacementPlugin(),
-    new OpenBrowserPlugin({ url: 'http://localhost:8080' }),
-    new webpack.LoaderOptionsPlugin({
-      options: {
-        sassLoader: {
-          includePaths: ['src/style']
-        },
-        context: path.join(__dirname, 'src'),
-        output: {
-          path: path.join(__dirname, 'www')
-        }
-      }
-    })
+    extractSass,
+    new webpack.NamedModulesPlugin(),
+    new webpack.HotModuleReplacementPlugin()
   ]
 };

@@ -1,49 +1,79 @@
-var webpack = require('webpack');
-var path = require('path');
-var uglifyJsPlugin = webpack.optimize.UglifyJsPlugin;
-var CopyWebpackPlugin = require('copy-webpack-plugin');
-var ExtractTextPlugin = require("extract-text-webpack-plugin");
+const webpack = require('webpack');
+const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
+
+const extractSass = new ExtractTextPlugin({
+  filename: 'main.css'
+});
 
 module.exports = {
-  devtool: 'cheap-source-map',
-  entry: [
-    path.resolve(__dirname, 'src/main.js'),
-  ],
+  mode: 'production',
+  entry: {
+    main: path.resolve(__dirname, 'src/main.js')
+  },
   output: {
-    path: __dirname + '/docs',
+    path: path.resolve(__dirname, 'docs'),
     publicPath: '/',
-    filename: './bundle.js'
+    filename: '[name].js'
   },
   module: {
-    loaders: [
+    rules: [
       {
         test: /\.jsx?$/,
         include: path.resolve(__dirname, 'src'),
         exclude: /node_modules/,
-        loader: 'babel-loader',
-        query: {
-          presets: ['es2015', 'stage-0', 'react']
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['es2015', 'stage-0', 'react']
+          }
         }
       },
-      { test: /\.css$/, include: path.resolve(__dirname, 'src'), loader: 'style-loader!css-loader' },
-      { test: /\.scss$/, include: path.resolve(__dirname, 'src'), loader: ExtractTextPlugin.extract({ fallback: 'style-loader', use: ['css-loader', 'sass-loader'] }) },
+      // { test: /\.css$/, include: path.resolve(__dirname, 'src'), use: 'style-loader!css-loader' },
+      {
+        test: /\.scss$/,
+        include: path.resolve(__dirname, 'src'),
+        use: extractSass.extract({
+          use: [{
+            loader: 'css-loader', // translates CSS into CommonJS
+            options: {
+              sourceMap: true
+            }
+          }, {
+            loader: 'sass-loader', // compiles Sass to CSS
+            options: {
+              sourceMap: true
+            }
+          }],
+          fallback: 'style-loader'
+        })
+      }
     ]
+  },
+  optimization: {
+    splitChunks: {
+      cacheGroups: {
+        commons: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all'
+        }
+      }
+    }
   },
   resolve: {
     extensions: ['.scss', '.js', '.jsx'],
   },
   plugins: [
-    new uglifyJsPlugin({
-      compress: {
-        warnings: false
-      }
-    }),
+    extractSass,
+    new CleanWebpackPlugin(['docs']),
     new webpack.DefinePlugin({
       'process.env': {
         NODE_ENV: JSON.stringify('production')
       }
     }),
-    new ExtractTextPlugin('main.css'),
     new CopyWebpackPlugin([
       { from: './public/index.html', to: 'index.html' },
       { from: './public/data', to: 'data' }

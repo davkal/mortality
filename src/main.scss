@@ -1,4 +1,4 @@
-@import 'colors';
+@import './colors';
 
 html,
 body {
@@ -31,8 +31,27 @@ body {
 
   .filter {
     color: #666;
-    position: relative;
     margin-bottom: 0.25em;
+    cursor: pointer;
+    display: flex;
+
+    &.selected .filter-dot {
+      visibility: visible;
+    }
+
+    &.no-display {
+      display: none;
+    }
+  }
+
+  .filter-dot {
+    visibility: hidden;
+    display: block;
+    width: 0.5em;
+    height: 0.5em;
+    background-color: black;
+    border-radius: 100%;
+    margin: 0.4em 0.5em 0 0;
   }
 
   .filter-bars {
@@ -180,9 +199,9 @@ svg .background {
 
 @keyframes spin {
   from {
-      transform:rotate(0deg);
+      transform: rotate(0deg);
   }
   to {
-      transform:rotate(360deg);
+      transform: rotate(360deg);
   }
 }
